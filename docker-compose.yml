@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+
+  # ── MySQL ──────────────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: pugapi_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: pugapi
+      MYSQL_USER: puguser
+      MYSQL_PASSWORD: pugpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-upuguser", "-ppugpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── API ────────────────────────────────────────────────────────────────────
+  api:
+    build: .
+    container_name: pugapi_api
+    restart: unless-stopped
+    env_file: .env          # loads your local .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy   # wait for MySQL to be ready before starting
+    environment:
+      DB_HOST: db            # override to match the docker-compose service name
+
+volumes:
+  mysql_data:

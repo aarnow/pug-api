@@ -1,0 +1,22 @@
+# Environnement
+.env
+.env.local
+.env.*.local
+
+# Dépendances
+node_modules/
+
+# IDE
+.idea/
+*.iml
+out/
+.idea_modules/
+
+# Logs et temporaires
+logs/
+tmp/
+*.log
+
+# Build
+dist/
+build/
