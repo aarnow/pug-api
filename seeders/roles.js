@@ -14,6 +14,11 @@ module.exports = {
                 updated_at: new Date(),
             },
             {
+                name:       'ROLE_MODERATOR',
+                created_at: new Date(),
+                updated_at: new Date(),
+            },
+            {
                 name:       'ROLE_ADMIN',
                 created_at: new Date(),
                 updated_at: new Date(),
@@ -25,7 +30,7 @@ module.exports = {
 
     async down(queryInterface) {
         await queryInterface.bulkDelete('roles', {
-            name: ['ROLE_USER', 'ROLE_EDITOR', 'ROLE_ADMIN'],
+            name: ['ROLE_USER', 'ROLE_EDITOR', 'ROLE_MODERATOR', 'ROLE_ADMIN'],
         });
     },
 };
