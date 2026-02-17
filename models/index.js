@@ -16,9 +16,14 @@ const sequelize = new Sequelize(
     }
 );
 
-const User = require('./User')(sequelize);
-const Role = require('./Role')(sequelize);
+// ── Modèles ───────────────────────────────────────────────────────────────────
+const User         = require('./User')(sequelize);
+const Role         = require('./Role')(sequelize);
+const RefreshToken = require('./RefreshToken')(sequelize);
 
+// ── Associations ──────────────────────────────────────────────────────────────
+
+// ManyToMany User <-> Role
 User.belongsToMany(Role, {
     through:     'user_roles',
     foreignKey:  'user_id',
@@ -26,7 +31,6 @@ User.belongsToMany(Role, {
     timestamps:  true,
     underscored: true,
 });
-
 Role.belongsToMany(User, {
     through:     'user_roles',
     foreignKey:  'role_id',
@@ -35,4 +39,8 @@ Role.belongsToMany(User, {
     underscored: true,
 });
 
-module.exports = { sequelize, User, Role };
+// OneToMany User -> RefreshToken
+User.hasMany(RefreshToken, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+RefreshToken.belongsTo(User, { foreignKey: 'user_id' });
+
+module.exports = { sequelize, User, Role, RefreshToken };

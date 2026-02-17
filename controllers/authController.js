@@ -1,25 +1,6 @@
-const bcrypt = require('bcrypt');
-const jwt    = require('jsonwebtoken');
-const { User, Role } = require('../models');
+const authService = require('../services/authService');
 
-const SALT_ROUNDS = 10;
-const JWT_SECRET  = process.env.JWT_SECRET;
-const JWT_EXPIRES = process.env.JWT_EXPIRES_IN || '15m';
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function generateToken(user) {
-    return jwt.sign(
-        { sub: user.id, email: user.email },
-        JWT_SECRET,
-        { algorithm: 'HS256', expiresIn: JWT_EXPIRES }
-    );
-}
-
-function formatRoles(roles) {
-    return roles.map((r) => r.name);
-}
-
-// ── Register ─────────────────────────────────────────────────────────────────
+// ── Register ──────────────────────────────────────────────────────────────────
 async function register(req, res, next) {
     const { email, password } = req.body;
 
@@ -31,35 +12,8 @@ async function register(req, res, next) {
     }
 
     try {
-        const existing = await User.findOne({ where: { email: email.toLowerCase() } });
-        if (existing) {
-            return res.status(409).json({ error: 'email already in use' });
-        }
-
-        const hashed = await bcrypt.hash(password, SALT_ROUNDS);
-
-        const user = await User.create({
-            email:    email.toLowerCase(),
-            password: hashed,
-        });
-
-        const userRole = await Role.findOne({ where: { name: 'ROLE_USER' } });
-        if (userRole) {
-            await user.addRole(userRole);
-        }
-
-        // Recharger le user avec ses rôles
-        const roles = await user.getRoles();
-
-        const token = generateToken(user);
-
-        return res.status(201).json({
-            message: 'User created',
-            token,
-            userId: user.id,
-            roles:  formatRoles(roles),
-        });
-
+        const result = await authService.register(email, password);
+        return res.status(201).json(result);
     } catch (err) {
         next(err);
     }
@@ -74,32 +28,43 @@ async function login(req, res, next) {
     }
 
     try {
-        const user = await User.findOne({
-            where:   { email: email.toLowerCase() },
-            include: [{ model: Role }],
-        });
-
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const match = await bcrypt.compare(password, user.password);
-        if (!match) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const token = generateToken(user);
-
-        return res.status(200).json({
-            message: 'User connected',
-            token,
-            userId: user.id,
-            roles:  formatRoles(user.Roles),
-        });
-
+        const result = await authService.login(email, password);
+        return res.status(200).json(result);
     } catch (err) {
         next(err);
     }
 }
 
-module.exports = { register, login };
+// ── Refresh ───────────────────────────────────────────────────────────────────
+async function refresh(req, res, next) {
+    const { refresh_token } = req.body;
+
+    if (!refresh_token) {
+        return res.status(400).json({ error: 'refresh_token is required' });
+    }
+
+    try {
+        const result = await authService.refresh(refresh_token);
+        return res.status(200).json(result);
+    } catch (err) {
+        next(err);
+    }
+}
+
+// ── Logout ────────────────────────────────────────────────────────────────────
+async function logout(req, res, next) {
+    const { refresh_token } = req.body;
+
+    if (!refresh_token) {
+        return res.status(400).json({ error: 'refresh_token is required' });
+    }
+
+    try {
+        const result = await authService.logout(refresh_token);
+        return res.status(200).json(result);
+    } catch (err) {
+        next(err);
+    }
+}
+
+module.exports = { register, login, refresh, logout };
