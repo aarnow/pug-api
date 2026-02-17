@@ -1,23 +1,22 @@
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 
-const pool = mysql.createPool({
+const pool = new Pool({
     host:     process.env.DB_HOST     || 'localhost',
-    port:     parseInt(process.env.DB_PORT || '3306'),
-    user:     process.env.DB_USER     || 'root',
-    password: process.env.DB_PASSWORD || 'root',
+    port:     parseInt(process.env.DB_PORT || '5432'),
+    user:     process.env.DB_USER     || 'postgres',
+    password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME     || 'pugapi',
-    waitForConnections: true,
-    connectionLimit:    10,
-    queueLimit:         0,
+    // En production sur Render, la connexion passe par SSL
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 });
 
 /**
  * Test the DB connection (used by /health)
  */
 async function testConnection() {
-    const connection = await pool.getConnection();
-    await connection.ping();
-    connection.release();
+    const client = await pool.connect();
+    await client.query('SELECT 1');
+    client.release();
 }
 
 module.exports = { pool, testConnection };
