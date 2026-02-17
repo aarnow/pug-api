@@ -1,23 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const { testConnection } = require('../db');
+const { sequelize } = require('../models');
 
 router.get('/', async (req, res) => {
     const health = {
-        status: 'ok',
+        status:    'ok',
         timestamp: new Date().toISOString(),
-        api: 'up',
-        database: 'unknown',
+        api:       'up',
+        database:  'unknown',
     };
 
     try {
-        await testConnection();
+        await sequelize.authenticate();
         health.database = 'up';
         res.status(200).json(health);
     } catch (err) {
-        health.status = 'error';
+        health.status   = 'error';
         health.database = 'down';
-        health.error = err.message;
+        health.error    = err.message;
         res.status(503).json(health);
     }
 });
